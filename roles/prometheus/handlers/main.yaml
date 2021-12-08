@@ -1,0 +1,7 @@
+---
+- name: remove prometheus archive
+  become: yes
+  file:
+    path: /tmp/prometheus.tgz
+    state: absent
+...

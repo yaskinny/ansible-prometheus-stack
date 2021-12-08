@@ -1,0 +1,30 @@
+---
+global:
+  scrape_interval: 15s 
+  evaluation_interval: 15s 
+
+rule_files: []
+
+scrape_configs:
+  - job_name: "prometheus"
+    static_configs:
+    - targets:
+      - localhost:9090
+  {% if groups['nodes'] | length -%}
+  - job_name: {{ _node_exporters_job_name | default('node_exporter') }}
+    basic_auth:
+      username: {{ _haproxy_node_exporter_username | default ('node_exporter') }}
+      password: {{ _haproxy_node_exporter_password | default ('node_exporter') }}
+    {% if _enable_file_sd | default('true') != "false" -%}
+    file_sd_configs:
+    - files:
+      - file_sd/node_exporter.yaml
+    {% else %}
+    targets:
+    {% for h in groups['nodes'] %}
+    - {{ hostvars[h]['ansible_default_ipv4']['address'] }}:59100
+    {% endfor %}
+    {% endif %}
+  {% endif %}
+
+...

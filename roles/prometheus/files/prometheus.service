@@ -1,0 +1,20 @@
+[Unit]
+Description="Prometheus service file"
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=prometheus
+Group=prometheus
+EnvironmentFile=/opt/prometheus/systemd.envs
+ExecStartPre=/opt/prometheus/promtool check config /opt/prometheus/prometheus.yml
+ExecStart=/opt/prometheus/prometheus $OPTS --web.listen-address='localhost:9090'
+ExecReload=killall -s SIGHUP prometheus
+Type=simple
+KillMode=process
+Restart=always
+RestartSec=1m
+WorkingDirectory=/opt/prometheus
+
+[Install]
+WantedBy=multi-user.target

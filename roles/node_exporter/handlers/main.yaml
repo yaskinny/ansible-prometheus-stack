@@ -1,0 +1,7 @@
+---
+- name: remove node_exporter archive
+  become: yes
+  file:
+    path: /tmp/node_exporter.tgz
+    state: absent
+...

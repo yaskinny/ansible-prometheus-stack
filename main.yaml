@@ -1,0 +1,8 @@
+---
+- hosts: prometheus,nodes
+  become: yes
+
+  roles:
+  - role: prometheus
+  - role: node_exporter
+...

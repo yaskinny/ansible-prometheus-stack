@@ -1,0 +1,12 @@
+{% if (groups['nodes'] | length) and (_enable_file_sd | default('true') != "false") %}
+- targets:
+{% for h in groups['nodes'] %}
+  - {{ hostvars[h]['ansible_default_ipv4']['address'] }}:59100
+{% endfor %}
+{% endif %}
+{% if (_file_sd_labels is defined) and (_file_sd_labels | length) %}
+  labels:
+  {% for k, v in _file_sd_labels.items() %}
+  {{ k }}: {{ v }}
+  {% endfor %}
+{% endif %}

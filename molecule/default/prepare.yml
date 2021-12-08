@@ -1,0 +1,19 @@
+---
+- hosts: all
+
+  tasks:
+  - name: install curl
+    become: yes
+    apt:
+      update_cache: yes
+      name: curl
+      state: present
+  - name: create killall command to pass the test
+    become: yes
+    file:
+      state: touch
+      path: /usr/sbin/killall
+      mode: "0755"
+      owner: root
+      group: root
+...

@@ -1,0 +1,123 @@
+---
+- name: prometheus
+  become: true
+  block:
+  - name: create group for prometheus
+    group:
+      name: prometheus
+      state: present
+  - name: create user for prometheus
+    user:
+      name: prometheus
+      group: prometheus
+      shell: '/usr/bin/false'
+      state: present
+      password_lock: true
+      create_home: true
+      home: /opt/prometheus
+  - name: change prometheus home perms
+    file:
+      path: /opt/prometheus
+      state: directory
+      mode: "0750"
+  - name: copy prometheus files
+    copy:
+      src: "{{ item.src }}"
+      dest: "{{ item.dest }}"
+      owner: "{{ item.o }}"
+      group: "{{ item.o }}"
+      mode: "{{ item.mode }}"
+    loop:
+    - src: files/prometheus.tgz
+      dest: /tmp/
+      o: root
+      mode: "0644"
+    - src: files/prometheus.service
+      dest: /etc/systemd/system/
+      mode: "0644"
+      o: root
+    - src: files/prometheus.envs
+      dest: /opt/prometheus/systemd.envs
+      o: prometheus
+      mode: "0600"
+    notify:
+    - remove prometheus archive
+  - name: copy prometheus config template
+    template:
+      src: files/prometheus.yml.j2
+      dest: /opt/prometheus/prometheus.yml
+      owner: prometheus
+      group: prometheus
+      mode: "0640"
+  - name: untar prometheus
+    shell: >
+      tar -C /opt/prometheus -zxvf /tmp/prometheus.tgz --strip-components=1 --skip-old-files
+  - name: create directory for file SD and change owner of files
+    file:
+      path: "{{ item.p }}"
+      state: "{{ item.s }}"
+      owner: "{{ item.o }}"
+      group: "{{ item.o }}"
+      mode: "{{ item.m }}"
+    loop:
+    - p: /opt/prometheus
+      s: directory
+      o: prometheus
+      m: "0750"
+    - p: /opt/prometheus/file_sd
+      s: directory
+      o: prometheus
+      m: "0750"
+  - name: add filesd config
+    blockinfile:
+      path: /opt/prometheus/file_sd/node_exporter.yaml
+      block: "{{ lookup('template', 'files/file_sd.yaml.j2') }}"
+      state: present
+      create: true
+      group: prometheus
+      owner: prometheus
+      mode: "0640"
+  - name: systemd
+    systemd:
+      daemon_reload: true
+      name: prometheus
+      state: restarted
+      enabled: true
+  - name: check if prometheus answering queries
+    shell: >
+      sleep 3s && curl -m 2 http://localhost:9090/metrics -o /dev/null -XGET
+    ignore_errors: true
+    changed_when: false
+  - name: install haproxy for rp
+    apt:
+      update_cache: yes
+      cache_valid_time: 3600
+      name: haproxy
+      state: present
+  - name: add proxy config
+    blockinfile:
+      block: "{{ lookup('template', 'files/haproxy.conf') }}"
+      path: /etc/haproxy/haproxy.cfg
+      validate: /usr/sbin/haproxy -f %s -c
+      insertafter: EOF
+      marker: "# PROMETHEUS CONFIG"
+  - name: reload haproxy
+    systemd:
+      name: haproxy
+      state: reloaded
+      enabled: yes
+  - name: check if prometheus is running
+    shell: >
+      systemctl is-active prometheus
+    register: systemctl
+    changed_when: false
+  - name: check
+    assert:
+      that:
+      - systemctl.rc == 0
+      fail_msg: "Failed to validate prometheus health!"
+      success_msg: "Prometheus is up and running."
+  when: "'prometheus' in group_names"
+  tags:
+  - prometheus
+...

@@ -1,0 +1,5 @@
+[prometheus]
+# put Your prometheus host in this group
+
+[nodes]
+# put Your hosts in this group to install Node Exporter on them

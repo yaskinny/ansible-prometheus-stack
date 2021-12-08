@@ -1,0 +1,19 @@
+[Unit]
+Description="node exporter service"
+Wants=network-online.target
+After=network-online.target
+
+
+[Service]
+User=node_exporter
+Group=node_exporter
+ExecStart=/opt/node_exporter/node_exporter $OPTS --web.listen-address="localhost:9100"
+WorkingDirectory=/opt/node_exporter
+Type=simple
+KillMode=process
+EnvironmentFile=-/opt/node_exporter/systemd.envs
+Restart=on-failure
+RestartSec=20s
+
+[Install]
+WantedBy=multi-user.target

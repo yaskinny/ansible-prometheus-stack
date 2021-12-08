@@ -1,0 +1,80 @@
+---
+- name: node_exporter
+  become: yes
+  block:
+  - name: create group for exporter
+    group:
+      name: node_exporter
+      state: present
+  - name: create user exporter
+    user:
+      name: node_exporter
+      group: node_exporter
+      state: present
+      shell: '/usr/bin/false'
+      password_lock: true
+      create_home: true
+      home: /opt/node_exporter
+  - name: copy files
+    copy:
+      src: "{{ item.s }}"
+      dest: "{{ item.d }}"
+      owner: "{{ item.o }}"
+      group: "{{ item.o }}"
+      mode: "{{ item.m }}"
+    loop:
+    - s: node-exporter.service
+      d: /etc/systemd/system/
+      o: root
+      m: "0644"
+    - s: systemd.envs
+      d: /opt/node_exporter/
+      o: node_exporter
+      m: "0600"
+    - s: node_exporter.tgz
+      d: /tmp/node_exporter.tgz
+      o: root
+      m: "0644"
+    notify: remove node_exporter archive
+  - name: untar node_exporter
+    shell: >
+      tar -C /opt/node_exporter -zxvf /tmp/node_exporter.tgz --wildcards "*node_exporter" --strip-components=1 --skip-old-files
+  - name: start node_exporter service
+    systemd:
+      daemon_reload: true
+      name: node-exporter
+      enabled: true
+      state: restarted
+  - name: install haproxy
+    apt:
+      update_cache: yes
+      cache_valid_time: 3600
+      name: haproxy
+      state: present
+  - name: config haproxy
+    blockinfile:
+      path: /etc/haproxy/haproxy.cfg
+      block: "{{ lookup('template', 'files/haproxy.conf') }}"
+      state: present
+      validate: /usr/sbin/haproxy -f %s -c
+      marker: "# NODE EXPORTER CONFIG"
+  - name: restart haporxy
+    systemd:
+      name: haproxy
+      state: restarted
+      enabled: yes
+  - name: check if node_exporter
+    shell:
+      systemctl is-active node-exporter
+    register: systemd
+    ignore_errors: true
+  - name: check
+    assert:
+      that:
+      - systemd.rc == 0
+      fail_msg: "Can not validate node_exporter health!"
+      success_msg: "node_exporter is up and running."
+  when: "'nodes' in group_names"
+  tags:
+  - node-exporter
+...

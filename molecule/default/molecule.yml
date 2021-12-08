@@ -1,0 +1,56 @@
+---
+dependency:
+  name: galaxy
+driver:
+  name: docker
+lint: |
+  set -e
+  yamllint .
+  ansible-lint -x command-instead-of-module,command-instead-of-shell
+platforms:
+- name: instance-prometheus
+  image: geerlingguy/docker-ubuntu2004-ansible
+  command: ""
+  privileged: true
+  volumes:
+    - /sys/fs/cgroup:/sys/fs/cgroup:ro
+  pre_build_image: true
+  groups:
+  - prometheus
+  - nodes
+- name: instance-node-1
+  image: geerlingguy/docker-ubuntu2004-ansible
+  command: ""
+  privileged: true
+  volumes:
+    - /sys/fs/cgroup:/sys/fs/cgroup:ro
+  pre_build_image: true
+  groups:
+  - nodes
+- name: instance-node-2
+  image: geerlingguy/docker-ubuntu2004-ansible
+  command: ""
+  privileged: true
+  volumes:
+    - /sys/fs/cgroup:/sys/fs/cgroup:ro
+  pre_build_image: true
+  groups:
+  - nodes
+provisioner:
+  name: ansible
+verifier:
+  name: ansible
+scenario:
+  test_sequence:
+  - dependency
+  - lint
+  - cleanup
+  - destroy
+  - syntax
+  - create
+  - prepare
+  - converge
+  - side_effect
+  - verify
+  - cleanup
+  - destroy

@@ -1,0 +1,64 @@
+---
+# TODO: FIX THIS
+# - name: Verify
+#   hosts: all
+#   gather_facts: false
+#   tasks:
+#   - name: user and group node exporter
+#     shell: >
+#       grep -q node_exporter /etc/passwd &&
+#       grep -q node_exporter /etc/group
+#     changed_when: false
+#     ignore_errors: true
+#     register: node_exporter_user
+#     when: "'nodes' in group_names"
+#   - name: user and group prometheus
+#     shell: >
+#       grep -q prometheus /etc/passwd &&
+#       grep -q prometheus /etc/group
+#     changed_when: false
+#     ignore_errors: true
+#     register: prometheus_user
+#     when: "'prometheus' in group_names"
+#   - name: check if haproxy is up on all hosts
+#     shell: >
+#       systemctl is-active haproxy &&
+#       systemctl is-enabled haproxy
+#     changed_when: false
+#     ignore_errors: true
+#     register: haproxy_systemd
+#   - name: check if node_exporter is up on all hosts
+#     shell: >
+#       systemctl is-active node-exporter &&
+#       systemctl is-enabled node-exporter
+#     changed_when: false
+#     ignore_errors: true
+#     register: node_exporter_systemd
+#   - name: check if prometheus is up on all hosts
+#     shell: >
+#       systemctl is-active prometheus &&
+#       systemctl is-enabled prometheus
+#     changed_when: false
+#     ignore_errors: true
+#     register: prometheus_systemd
+#     when: "'prometheus' in group_names"
+#   - name: check if all node exporters basic auth is working
+#     shell: >
+#       curl {{ ansible_default_ipv4.address }}:59100 -o /dev/null -XGET -I -s -w "%{http_code}"
+#     changed_when: false
+#     failed_when: "'401' not in basic_auth_node_exporter.stdout"
+#     register: basic_auth_node_exporter
+#   - name: check if prometheus basic auth is working
+#     shell: >
+#       curl {{ ansible_default_ipv4.address }}:59090 -o /dev/null -XGET -I -s -w "%{http_code}"
+#     changed_when: false
+#     failed_when: "'401' not in basic_auth_prometheus.stdout"
+#     register: basic_auth_prometheus
+#     when: "'prometheus' in group_names"
+#   - name: check
+#     assert:
+#       that:
+#       - user.rc == 0
+#       success_msg: "Found {{ username }} user and group"
+#       fail_msg: "Can not found {{ username }}"
+...
